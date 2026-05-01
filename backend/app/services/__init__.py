@@ -4,6 +4,7 @@ from .milvus_service import (
     COLLECTION_NAME,
     DIMENSION,
 )
+from .ingestion_service import IngestionService
 
 __all__ = [
     "MilvusService",
@@ -11,4 +12,5 @@ __all__ = [
     "DIMENSION",
     "get_embedding",
     "get_embeddings",
+    "IngestionService",
 ]
