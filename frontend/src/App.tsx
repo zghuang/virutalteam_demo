@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import SearchPage from './pages/SearchPage';
+import DashboardPage from './pages/DashboardPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -20,8 +21,13 @@ const App: React.FC = () => {
             <Layout><SearchPage /></Layout>
           </ProtectedRoute>
         } />
-        <Route path="/" element={<Navigate to="/search" replace />} />
-        <Route path="*" element={<Navigate to="/search" replace />} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Layout><DashboardPage /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
