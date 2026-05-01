@@ -21,6 +21,20 @@ export const auth = {
   me: () => api.get('/api/auth/me'),
 };
 
+export const alerts = {
+  list: () => api.get('/api/alerts'),
+  create: (data: { name: string; keyword: string; frequency?: string }) => api.post('/api/alerts', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/api/alerts/${id}`, data),
+  delete: (id: number) => api.delete(`/api/alerts/${id}`),
+  events: (params?: { alert_id?: number; limit?: number }) => api.get('/api/alerts/events', { params }),
+};
+
+export const reports = {
+  list: (params?: { report_type?: string; limit?: number }) => api.get('/api/reports', { params }),
+  generate: (data: { title: string; description?: string; report_type?: string }) => api.post('/api/reports/generate', data),
+  get: (id: number) => api.get(`/api/reports/${id}`),
+};
+
 export const search = {
   keyword: (params: { q: string; category?: string; source?: string; date_from?: string; date_to?: string }) =>
     api.get('/api/search', { params }),
