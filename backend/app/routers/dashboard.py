@@ -42,3 +42,14 @@ def get_leadership_summary():
         "top_priority_sector": "pharma",
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+@router.get("/api/dashboard/source-health")
+def get_source_health():
+    from datetime import datetime, timezone
+    return {
+        "healthy_sources": 12,
+        "degraded_sources": 2,
+        "offline_sources": 1,
+        "status": "ok",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
