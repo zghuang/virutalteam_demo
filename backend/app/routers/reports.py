@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -67,6 +67,21 @@ def generate_report(payload: ReportGenerateRequest):
     }
     reports_db.append(report)
     return {"report": report}
+
+
+@router.get("/status")
+def get_reports_status():
+    """Get report status summary."""
+    total = len(reports_db)
+    completed = sum(1 for r in reports_db if r.get("status") == "completed")
+    pending = sum(1 for r in reports_db if r.get("status") == "pending")
+    return {
+        "total_reports": total,
+        "completed_reports": completed,
+        "pending_reports": pending,
+        "status": "ok",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.get("/{report_id}")
