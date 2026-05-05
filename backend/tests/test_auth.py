@@ -45,7 +45,7 @@ class TestAuthEndpoints(unittest.TestCase):
             json={"username": "newuser", "password": "securepass"},
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json(), {"message": "User created"})
         mock_db.add.assert_called_once()
         mock_db.commit.assert_called_once()
@@ -174,7 +174,7 @@ class TestAuthEndpoints(unittest.TestCase):
     @patch("app.routers.auth.SessionLocal")
     def test_me_no_auth_header(self, mock_session_local):
         response = self.client.get("/api/auth/me")
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     # Token creation tests
 
