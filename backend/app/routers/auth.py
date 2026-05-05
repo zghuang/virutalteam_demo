@@ -15,7 +15,7 @@ JWT_SECRET = os.getenv("JWT_SECRET", "lifescience-secret-key")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24
 
-router = APIRouter()
+router = APIRouter(prefix="/api/auth")
 security = HTTPBearer()
 
 
@@ -77,7 +77,7 @@ def get_current_user(
     return user
 
 
-@router.post("/register")
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.username == request.username).first()
     if existing:
