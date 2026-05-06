@@ -1,4 +1,4 @@
-from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
+"""Milvus vector database service (lazy-loaded for Docker)."""
 
 COLLECTION_NAME = "article_embeddings"
 DIMENSION = 384
@@ -13,20 +13,33 @@ class MilvusService:
         self.host = host
         self.port = port
         self._connected = False
+        self._pymilvus = None
+
+    def _import_pymilvus(self):
+        if self._pymilvus is None:
+            try:
+                import pymilvus
+                self._pymilvus = pymilvus
+            except ImportError:
+                raise RuntimeError(
+                    "pymilvus is not installed. "
+                    "Install with: pip install pymilvus"
+                )
 
     def _ensure_connected(self):
-        """Ensure a connection to Milvus is established."""
+        self._import_pymilvus()
         if not self._connected:
-            connections.connect(
-                alias="default",
-                host=self.host,
-                port=self.port,
+            self._pymilvus.connections.connect(
+                alias="default", host=self.host, port=self.port,
             )
             self._connected = True
 
     def create_collection(self):
-        """Create the article_embeddings collection with id, vector, and text fields."""
+        self._import_pymilvus()
         self._ensure_connected()
+        utility, Collection = self._pymilvus.utility, self._pymilvus.Collection
+        CollectionSchema, FieldSchema = self._pymilvus.CollectionSchema, self._pymilvus.FieldSchema
+        DataType = self._pymilvus.DataType
 
         if utility.has_collection(COLLECTION_NAME):
             return
@@ -36,66 +49,45 @@ class MilvusService:
             FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=DIMENSION),
             FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
         ]
-        schema = CollectionSchema(fields=fields, description="Article embeddings for semantic search")
+        schema = CollectionSchema(fields=fields, description="Article embeddings")
         collection = Collection(name=COLLECTION_NAME, schema=schema)
-
-        index_params = {
-            "index_type": "IVF_FLAT",
-            "metric_type": "L2",
-            "params": {"nlist": 128},
-        }
-        collection.create_index(field_name="vector", index_params=index_params)
+        collection.create_index(field_name="vector", index_params={
+            "index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128},
+        })
         collection.load()
 
     def insert_vector(self, article_id: int, text: str, embedding: list[float]):
-        """Insert a single vector with its id and original text into the collection."""
+        self._import_pymilvus()
         self._ensure_connected()
-
-        if not utility.has_collection(COLLECTION_NAME):
+        if not self._pymilvus.utility.has_collection(COLLECTION_NAME):
             self.create_collection()
-
-        collection = Collection(COLLECTION_NAME)
-        entities = [
-            [article_id],
-            [embedding],
-            [text],
-        ]
-        collection.insert(entities)
+        collection = self._pymilvus.Collection(COLLECTION_NAME)
+        collection.insert([[article_id], [embedding], [text]])
         collection.flush()
 
     def search_similar(self, query_embedding: list[float], limit: int = 10) -> list[dict]:
-        """Search for the closest matching vectors and return results with id, text, and distance."""
+        self._import_pymilvus()
         self._ensure_connected()
-
-        collection = Collection(COLLECTION_NAME)
+        collection = self._pymilvus.Collection(COLLECTION_NAME)
         collection.load()
 
-        search_params = {
-            "metric_type": "L2",
-            "params": {"nprobe": 16},
-        }
         results = collection.search(
-            data=[query_embedding],
-            anns_field="vector",
-            param=search_params,
-            limit=limit,
-            output_fields=["id", "text"],
+            data=[query_embedding], anns_field="vector",
+            param={"metric_type": "L2", "params": {"nprobe": 16}},
+            limit=limit, output_fields=["id", "text"],
         )
 
         matches = []
         for hits in results:
             for hit in hits:
                 matches.append({
-                    "id": hit.entity.get("id"),
-                    "text": hit.entity.get("text"),
+                    "id": hit.entity.get("id"), "text": hit.entity.get("text"),
                     "distance": hit.distance,
                 })
-
         return matches
 
     def drop_collection(self):
-        """Drop the article_embeddings collection."""
+        self._import_pymilvus()
         self._ensure_connected()
-
-        if utility.has_collection(COLLECTION_NAME):
-            utility.drop_collection(COLLECTION_NAME)
+        if self._pymilvus.utility.has_collection(COLLECTION_NAME):
+            self._pymilvus.utility.drop_collection(COLLECTION_NAME)
