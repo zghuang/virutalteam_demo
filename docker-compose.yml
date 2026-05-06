@@ -22,7 +22,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ""
     ports:
       - "3000:80"
     depends_on:
